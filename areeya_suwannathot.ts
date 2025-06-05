@@ -1,56 +1,42 @@
-const mock_portals = [
-    { location: 55, destination: 38 },
-    { location: 14, destination: 35 },
-    { location: 91, destination: 48 },
-    { location: 30, destination: 8 },
-    { location: 31, destination: 70 },
-    { location: 63, destination: 83 },
-    { location: 3, destination: 5 },
-    { location: 47, destination: 86 },
-    { location: 71, destination: 93 },
-    { location: 21, destination: 4 },
-    { location: 44, destination: 65 },
-    { location: 96, destination: 66 },
-    { location: 79, destination: 42 },
-    { location: 87, destination: 54 },
-    { location: 90, destination: 119 },
-    { location: 120, destination: 149 },
-    { location: 150, destination: 179 },
-    { location: 180, destination: 200 }
-]
-function quickestPath({
-    portals,
-}: {
-    portals: { location: number; destination: number }[];
-}): number {
-    const dict: Record<number, number> = {};
-    for (const portal of portals) {
-        dict[portal.location] = portal.destination;
+function getMinMove(
+start:string, target:string, brokenTiles: string[]): number {
+    function boradPos(pos: string): [number, number] {
+        const col = pos.charCodeAt(0) - 'a'.charCodeAt(0);
+        const row = 8 - parseInt(pos[1]);
+        return [row, col];
     }
-
-    const checked = new Set<number>();
-    const queue = [{ position: 1, turn: 0 }];
-    checked.add(1);
-
-    while (queue.length > 0) {
-        const { position, turn: turn } = queue.shift()!;
-
-        if (position === 200) {
-            return turn;
-        }
-        for (let step = 1; step <= 11; step++) {
-            let next = position + step;
-            if (dict[next] !== undefined && dict[next] > next) {
-                next = dict[next];
-            }
-            if (!checked.has(next)) {
-                checked.add(next);
-                queue.push({ position: next, turn: turn + 1 });
-            }
-        }
+    const memo = Array.from({ length: 8 }, () => Array(8).fill(-1));
+    const visited = new Set();
+    const brokenSet = new Set()
+    for (let i=0 ;i<brokenTiles.length;i++){
+        brokenSet.add(boradPos(brokenTiles[i]).join(','))
     }
+    const startPos=boradPos(start)
+    const targetPos=boradPos(target)
+    function bfs(row:number,col:number){
+        if (row>=8||col>=8||row<0||col<0) return  Infinity
+        if (brokenSet.has(`${row},${col}`)) return Infinity;
+        if (row===targetPos[0]&&col===targetPos[1]) return 0
+        if (memo[row][col]!=-1) return memo[row][col]
+        const key = `${row},${col}`;
+        if (visited.has(key)) return Infinity;
+        visited.add(key);
+        const a = bfs(row - 2, col - 1);
+        const b = bfs(row - 1, col - 2);
+        const c = bfs(row + 1, col - 2);
+        const d = bfs(row + 2, col - 1);
+        const e = bfs(row + 2, col + 1);
+        const f = bfs(row + 1, col + 2);
+        const g = bfs(row - 1, col + 2);
+        const h = bfs(row - 2, col + 1);
+        const minMove = Math.min(a, b, c, d, e, f, g, h);
+        memo[row][col] = minMove === Infinity ? Infinity : minMove + 1;
+        visited.delete(key);
+        return memo[row][col];    
+    }
+    const result = bfs(startPos[0], startPos[1]);
+    return result === Infinity ? -1 : result;
 
-    return -1; 
 }
 
-console.log(quickestPath({ portals: mock_portals }));
+console.log(getMinMove('d6','h8',['f6','f7'])) 
